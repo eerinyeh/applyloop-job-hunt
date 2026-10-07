@@ -1,0 +1,16 @@
+{
+  "tracker": "private/Applications.xlsx",
+  "evidence": "private/evidence_bank.json",
+  "onboarding_status": "not_started",
+  "categories": [],
+  "directions": [],
+  "requested_categories": [],
+  "requested_titles": [],
+  "preferred_categories": [],
+  "lower_preference": [],
+  "non_negotiables": [],
+  "base_index": "private/base_cvs/index.json",
+  "cv_bases_directory": "private/base_cvs",
+  "current_work_permission": {"status": "unknown", "expiry": null, "confirmed_on": null},
+  "future_route": {"status": "not confirmed", "expiry": null}
+}

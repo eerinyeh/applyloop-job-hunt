@@ -1,0 +1,7 @@
+[
+  {"id": "sector", "type": "sector_exclusion", "user_wording": "No gambling industry", "values": ["gambling"]},
+  {"id": "outreach", "type": "responsibility_exclusion", "user_wording": "No roles where cold outreach is a main duty", "responsibility": "cold outreach", "scope": "main_duty"},
+  {"id": "salary", "type": "minimum_base_salary", "user_wording": "Annual base salary must be over GBP 30,000", "currency": "GBP", "period": "annual", "operator": ">", "amount": 30000, "pay_basis": "actual_contracted"},
+  {"id": "paid", "type": "paid_work_only", "user_wording": "Paid employment only, not unpaid volunteer work"},
+  {"id": "location", "type": "location", "user_wording": "The work must be based in London", "locations": ["London"], "scope": "work_based_in", "remote_from_london": "unconfirmed"}
+]

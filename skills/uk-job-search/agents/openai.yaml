@@ -1,0 +1,4 @@
+interface:
+  display_name: "ApplyLoop — Your Job Hunt, Connected"
+  short_description: "Prepare job applications and keep their history connected"
+  default_prompt: "Use $uk-job-search to gather my experience and search preferences, recommend directions and confirm them before creating category base CVs."

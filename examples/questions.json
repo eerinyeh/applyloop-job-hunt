@@ -1,0 +1,4 @@
+[
+  {"question": "Why are you interested in this role?", "max_words": 150},
+  {"question": "Tell us about a time you improved a process.", "max_characters": 1000}
+]

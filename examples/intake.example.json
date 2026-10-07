@@ -1,0 +1,22 @@
+{
+  "profile": {"name": "", "location": "", "phone": "", "email": "", "linkedin": "", "portfolio": "", "github": "", "other_links": []},
+  "base_cv_sources": [],
+  "extracted_cv_records": [],
+  "raw_experience": "",
+  "education": [],
+  "work_experience": [],
+  "side_projects": [],
+  "skills": [],
+  "volunteer": [],
+  "training": [],
+  "languages": [],
+  "other": [],
+  "search": {
+    "requested_categories": [],
+    "requested_titles": [],
+    "preferred_responsibilities": [],
+    "lower_preference": [],
+    "non_negotiables": [],
+    "notes": ""
+  }
+}

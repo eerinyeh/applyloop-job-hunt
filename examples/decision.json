@@ -1,0 +1,10 @@
+{
+  "eligibility": "pass",
+  "priority": 4,
+  "rationale": "Fictional example only: central responsibilities match the user's verified evidence and preferences.",
+  "constraint_assessments": [],
+  "gaps": [],
+  "gates": [
+    {"requirement": "Employer's exact eligibility wording", "status": "pass", "basis": "Verified candidate fact and employer source"}
+  ]
+}
