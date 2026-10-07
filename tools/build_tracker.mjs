@@ -49,8 +49,10 @@ base(overview,`A1:H${overviewLast}`); base(search,'A1:H21'); base(apps,`A1:P${la
 overview.tabColor = '#263D60';
 title(overview,'Application overview'); title(search,'Find an application'); title(apps,'Applications');
 overview.getRange('A4').values = [['From']]; overview.getRange('C4').values = [['Until (exclusive)']];
-overview.getRange('B4').values = [[new Date('2026-10-01T00:00:00Z')]];
-overview.getRange('D4').values = [[new Date('2026-11-01T00:00:00Z')]];
+const today = new Date();
+const reportStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+overview.getRange('B4').values = [[reportStart]];
+overview.getRange('D4').values = [[new Date(Date.UTC(reportStart.getUTCFullYear(), reportStart.getUTCMonth()+1, 1))]];
 overview.getRange('B4').setNumberFormat('dd mmm yyyy'); overview.getRange('D4').setNumberFormat('dd mmm yyyy');
 overview.getRange('B4').format.fill = '#FFF2CC'; overview.getRange('D4').format.fill = '#FFF2CC';
 overview.getRange('F4').values = [['Edit yellow dates to choose the application cohort.']];
@@ -100,11 +102,12 @@ overview.getRange(`E${monthHeader}:G${monthHeader}`).values=[['Semiweekly from',
 overview.getRange(`E${monthHeader-1}`).values=[['Monday–Wednesday and Thursday–Sunday']];
 for (let i=0;i<12;i++) {
   const r=periodFirst+i;
-  overview.getRange(`A${r}`).values=[[new Date(Date.UTC(2026,9+i,1))]];
-  overview.getRange(`B${r}`).values=[[new Date(Date.UTC(2026,10+i,1))]];
+  overview.getRange(`A${r}`).values=[[new Date(Date.UTC(reportStart.getUTCFullYear(),reportStart.getUTCMonth()+i,1))]];
+  overview.getRange(`B${r}`).values=[[new Date(Date.UTC(reportStart.getUTCFullYear(),reportStart.getUTCMonth()+i+1,1))]];
   overview.getRange(`C${r}`).formulas=[[`=COUNTIFS(${dates},">="&A${r},${dates},"<"&B${r})`]];
 }
-const startDate = new Date('2026-10-05T00:00:00Z');
+// Start on the Monday on/before the first month, so its opening days are covered.
+const startDate = new Date(reportStart.getTime()-((reportStart.getUTCDay()+6)%7)*86400000);
 for (let i=0;i<24;i++) {
   const r=periodFirst+i, offset=Math.floor(i/2)*7+(i%2?3:0), length=i%2?4:3;
   overview.getRange(`E${r}:F${r}`).values=[[
@@ -152,13 +155,14 @@ apps.freezePanes.freezeRows(5);apps.freezePanes.freezeColumns(2);
 
 // Representative input changes in memory; no fictional applications are delivered.
 apps.getRange('A6:O8').values=[
- ['TEST-1','Example A','Example role',categories[0],4,'Rejected',new Date('2026-10-02'),'https://example.com/jobs/1','London','','',new Date('2026-10-05'),'','','R1'],
- ['TEST-2','Example B','Other role',categories.at(-1),3,'Applied',new Date('2026-10-03'),'https://example.com/jobs/2','London','','','','','','R2'],
+ ['TEST-1','Example A','Example role',categories[0],4,'Rejected',new Date(reportStart.getTime()+86400000),'https://example.com/jobs/1','London','','',new Date(reportStart.getTime()+4*86400000),'','','R1'],
+ ['TEST-2','Example B','Other role',categories.at(-1),3,'Applied',new Date(reportStart.getTime()+2*86400000),'https://example.com/jobs/2','London','','','','','','R2'],
  ['TEST-3','Example C','Draft role',categories[0],5,'Draft','','https://example.com/jobs/3','London','','','','','','R3']
 ];
 search.getRange('B4').values=[['Example A']];wb.recalculate();
 const metrics=overview.getRange('A7:H7').values[0];
 if(metrics[0]!==2||metrics[1]!==1||metrics[2]!==0.5||metrics[3]!==1||metrics[4]!==0.5||metrics[7]!==1) throw new Error('Cohort metrics failed '+JSON.stringify(metrics));
+if(overview.getRange(`G${periodFirst}:G${periodFirst+23}`).values.reduce((n,row)=>n+row[0],0)!==2) throw new Error('Semiweekly periods omit opening-month applications');
 if(search.getRange('B6').values[0][0]!==1||search.getRange('B10').values[0][0]!=='TEST-1') throw new Error('Search failed');
 search.getRange('B4').values=[['no match at all']];wb.recalculate();
 if(search.getRange('B6').values[0][0]!==0||search.getRange('B10').values[0][0]!=='') throw new Error('No-match search failed');

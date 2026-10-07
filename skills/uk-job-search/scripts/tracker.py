@@ -133,6 +133,21 @@ def packet_rows(project):
     return rows
 
 
+def review_duplicates(matches, review):
+    """Permit inspected possible matches, preserving the distinction and its basis."""
+    if any(m['exact'] for m in matches):
+        raise ValueError('Exact duplicate cannot be overridden: ' + json.dumps(matches))
+    if not isinstance(review, list) or not review:
+        raise ValueError('Possible duplicates require an evidenced review for each matched ID')
+    ids = [r.get('id') for r in review if isinstance(r, dict)]
+    if len(ids) != len(review) or len(ids) != len(set(ids)) or set(ids) != {m['id'] for m in matches}:
+        raise ValueError('Duplicate review must cover exactly the possible matched IDs once each')
+    if any(r.get('outcome') != 'distinct' or not isinstance(r.get('basis'), str) or not r['basis'].strip()
+           for r in review):
+        raise ValueError('Each duplicate review requires outcome distinct and a verified basis')
+    return review
+
+
 def statistics(rows, start, end):
     chosen = [r for r in rows if r.get('Applied date') and start <= _date(r['Applied date']) < end]
     def measure(group):
@@ -203,6 +218,7 @@ def main(argv=None):
     for field in ('company', 'title', 'category', 'jd', 'decision'):
         p.add_argument('--'+field, required=True)
     p.add_argument('--url', default=''); p.add_argument('--requisition', default='')
+    p.add_argument('--duplicate-review', type=Path)
     p = sub.add_parser('questions'); p.add_argument('--id', required=True); p.add_argument('--input', type=Path, required=True)
     p = sub.add_parser('check-answer'); p.add_argument('file', type=Path)
     p.add_argument('--words', type=int); p.add_argument('--chars', type=int)
@@ -230,8 +246,19 @@ def main(argv=None):
         result = statistics(rows, start, end)
     elif args.command == 'prepare':
         matches = duplicates(rows + packet_rows(project), args.company, args.title, args.url, args.requisition)
+        # A tracker row and its packet share an ID; review that application once.
+        unique_matches = {}
+        for match in matches:
+            if match['id'] not in unique_matches or match['exact']:
+                unique_matches[match['id']] = match
+        matches = list(unique_matches.values())
+        duplicate_review = []
         if matches:
-            raise ValueError('Duplicate or possible duplicate: inspect before drafting: ' + json.dumps(matches))
+            if not args.duplicate_review:
+                raise ValueError('Duplicate or possible duplicate: inspect before drafting: ' + json.dumps(matches))
+            duplicate_review = review_duplicates(matches, json.loads(args.duplicate_review.read_text()))
+        elif args.duplicate_review:
+            raise ValueError('No duplicate candidates to review; omit --duplicate-review')
         decision = json.loads(Path(args.decision).read_text())
         priority = decision.get('priority')
         if decision.get('eligibility') != 'pass' or type(priority) is not int or priority not in (3, 4, 5):
@@ -259,6 +286,7 @@ def main(argv=None):
                    'category': args.category, 'url': args.url, 'requisition': args.requisition,
                    'decision': decision, 'initial_status': 'Draft',
                    'captured_at': dt.datetime.now(dt.timezone.utc).isoformat(),
+                   'duplicate_review': duplicate_review,
                    'jd_sha256': hashlib.sha256(jd.encode()).hexdigest()}
         (dest / 'context.json').write_text(json.dumps(context, indent=2))
         result = {'id': key, 'packet': str(dest), 'next': 'Create Draft tracker row with this ID; do not mark applied'}

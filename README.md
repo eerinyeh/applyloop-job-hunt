@@ -1,4 +1,6 @@
-# ApplyLoop — For fewer “Which job was this again?” moments.
+# ApplyLoop
+
+For fewer “Which job was this again?” moments.
 
 Turn a pasted job description into tailored CVs, cover letters and application answers grounded in your actual experience. Keep each role's context and application history together in an editable Excel tracker.
 
@@ -43,7 +45,7 @@ Open `private/Applications.xlsx` in Excel. Add/edit rows on Applications, filter
 - Priority 1–2 skips, priority 3 standard adaptation, priority 4–5 full five-pass CV optimisation. Stronger private CV requirements still apply to priority 3.
 - Priority 1–2 is reserved for major seniority or central-capability mismatch. Missing routine Jira/Salesforce familiarity in a coordination-led role is a supporting learning gap; specialist engineering/configuration can be a core gap.
 - Evidence-linked drafting rules, preserved chronology/project attribution and a private claim map. The reference checker detects missing IDs; the agent must still verify meaning.
-- Duplicate checks using advert URL, employer requisition and company/title. Potential duplicates require inspection.
+- Duplicate checks using advert URL, employer requisition and company/title. Inspected, genuinely distinct possible matches can proceed with a saved evidence-based review; exact duplicates remain blocked.
 - Private per-role packets containing the full JD and decision, so expired adverts and interrupted batches retain context.
 - Separate application-question files and word/character-limit checks.
 - An XLSX tracker with filters, validations, date-cohort formulas and search.
@@ -86,6 +88,8 @@ python3 skills/uk-job-search/scripts/tracker.py email-match private/email.txt
 
 The example decision is a schema illustration, not evidence of an actual eligibility pass. Fill it with real requirements and verified facts. When non-negotiables are configured, `constraint_assessments` must include every rule's ID, pass/fail/verify status and source/basis. `prepare` refuses unconfirmed directions, failed/unknown eligibility or hard constraints, and priority 1–2. It creates a draft packet; the agent then adds its Draft tracker row. Submission must be confirmed before Applied date is filled.
 
+For an inspected possible duplicate that is genuinely a different vacancy, use `prepare --duplicate-review private/duplicate-review.json` with the private, source-backed review format in [tracker rules](skills/uk-job-search/references/tracker-rules.md). This cannot override an exact duplicate.
+
 ## Workbook creation and updates
 
 The JavaScript helpers require `@oai/artifact-tool` from Codex's bundled spreadsheet runtime; they are not standalone npm tools. Ask Codex to use its spreadsheet skill and dependency loader. Keep a `node_modules` link to the bundled dependencies locally, never in a published archive. Do not copy the bundled runtime into the repository.
@@ -110,7 +114,7 @@ The working copy has a private evidence bank and config. Those files, the popula
 
 For another user, start the onboarding prompt above. The agent can use `examples/intake.example.json` as a private working schema, extract a supplied CV or record typed experience, and save an evidence bank (`records` with stable `id`, `facts`, `source`, plus profile and claim boundaries). It then proposes directions, waits for user confirmation, and creates the category bases/tracker. `examples/config.example.json` documents the unconfigured state. No applicant data belongs in public examples. An existing user can keep their library and update only changed preferences/evidence.
 
-The packaged repository is prepared for GitHub but has not been uploaded. Review the public file list before publishing; keep the private directory excluded from any manual upload. `.gitignore` does not remove files already committed to a repository.
+Review the public file list before publishing updates; keep the private directory excluded from any manual upload. `.gitignore` does not remove files already committed to a repository.
 
 ## Current boundaries
 
@@ -119,3 +123,5 @@ This is an agent-assisted local workflow. Local scripts do not authenticate to G
 No-response deadlines are reminders/inferences rather than confirmed rejection. Early rejection timing doesn't establish an ATS decision or its cause. Editorial fit estimates are a writing/relevance rubric, not an ATS score or interview probability.
 
 The spreadsheet was checked with its calculation engine and rendered previews. Native Excel interaction must be confirmed in the user's Excel version; a successful export alone doesn't verify its UI behavior. Word creation/rendering uses the document tools available in the Codex session.
+
+See [validation results](tests/VALIDATION.md) for the checks actually executed and the integrations still awaiting a live test. New tracker reporting starts in the creation month; the twice-weekly periods include that month's opening days. Existing workbooks are preserved and are not rebuilt by these changes.

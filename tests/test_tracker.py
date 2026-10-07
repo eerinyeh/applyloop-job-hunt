@@ -3,6 +3,8 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+import json
+from xlsx_fixture import write_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('tracker', ROOT/'skills/uk-job-search/scripts/tracker.py')
@@ -44,18 +46,68 @@ class WorkflowTests(unittest.TestCase):
     def test_failed_or_unknown_gate_cannot_create_packet(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'decision.json';p.write_text('{"priority":4,"eligibility":"verify"}')
-            # Use the actual empty template when available; failure must precede any packet creation.
-            workbook=ROOT/'private/Applications.xlsx'
-            if not workbook.exists(): self.skipTest('Template not built')
+            workbook=Path(d)/'Applications.xlsx'
+            write_fixture(workbook)
             with self.assertRaises(ValueError):
                 tracker.main(['--project',d,'--workbook',str(workbook),'prepare','--company','Fictional',
                               '--title','Example','--category','Operations','--jd',str(p),'--decision',str(p)])
             self.assertFalse((Path(d)/'private/jobs').exists())
 
-    def test_empty_delivered_workbook_has_no_fictional_records(self):
-        workbook=ROOT/'private/Applications.xlsx'
-        if not workbook.exists(): self.skipTest('Template not built')
-        self.assertEqual(tracker.read_xlsx(workbook),[])
+    def test_reader_accepts_empty_workbook(self):
+        with tempfile.TemporaryDirectory() as d:
+            workbook=Path(d)/'Applications.xlsx'
+            write_fixture(workbook)
+            self.assertEqual(tracker.read_xlsx(workbook),[])
+
+    def test_reader_roundtrips_dates_and_rejects_duplicate_ids(self):
+        with tempfile.TemporaryDirectory() as d:
+            workbook=Path(d)/'Applications.xlsx'
+            row={'Application ID':'APP-EXAMPLE001','Company':'Example & Company',
+                 'Job title':'Coordinator','Applied date':46300,'Status':'Applied'}
+            write_fixture(workbook,[row])
+            saved=tracker.read_xlsx(workbook)[0]
+            self.assertEqual(saved['Applied date'],'2026-10-05')
+            self.assertEqual(saved['Company'],'Example & Company')
+            write_fixture(workbook,[row,row])
+            with self.assertRaisesRegex(ValueError,'Duplicate Application IDs'):
+                tracker.read_xlsx(workbook)
+
+    def test_distinct_possible_duplicate_needs_saved_review(self):
+        with tempfile.TemporaryDirectory() as d:
+            project=Path(d); (project/'private').mkdir()
+            workbook=project/'private/Applications.xlsx'
+            write_fixture(workbook,[{'Application ID':'APP-EXAMPLE001','Company':'Example',
+                'Job title':'Coordinator','Requisition ID':'OLD-1','Status':'Applied'}])
+            (project/'private/config.json').write_text(json.dumps({'categories':['Operations'],
+                'onboarding_status':'directions_confirmed','non_negotiables':[]}))
+            decision=project/'decision.json'
+            decision.write_text(json.dumps({'priority':4,'eligibility':'pass',
+                'gates':[{'status':'pass','requirement':'Paid role','basis':'Synthetic full advert'}],
+                'rationale':'Synthetic eligible coordination role'}))
+            jd=project/'jd.txt';jd.write_text('Synthetic distinct vacancy NEW-2, paid coordination role.')
+            args=['--project',d,'prepare','--company','Example','--title','Coordinator',
+                '--category','Operations','--requisition','NEW-2','--jd',str(jd),'--decision',str(decision)]
+            with self.assertRaisesRegex(ValueError,'possible duplicate'):
+                tracker.main(args)
+            review=project/'review.json'
+            review.write_text(json.dumps([{'id':'APP-EXAMPLE001','outcome':'distinct',
+                'basis':'Compared saved OLD-1 advert with supplied NEW-2 advert; different employer requisitions.'}]))
+            tracker.main(args+['--duplicate-review',str(review)])
+            contexts=list((project/'private/jobs').glob('*/context.json'))
+            self.assertEqual(len(contexts),1)
+            self.assertEqual(json.loads(contexts[0].read_text())['duplicate_review'],json.loads(review.read_text()))
+            with self.assertRaisesRegex(ValueError,'Exact duplicate'):
+                tracker.main(args+['--duplicate-review',str(review)])
+
+    def test_exact_duplicate_and_incomplete_reviews_remain_blocked(self):
+        with self.assertRaisesRegex(ValueError,'Exact duplicate'):
+            tracker.review_duplicates([{'id':'APP-EXAMPLE001','exact':True}],
+                [{'id':'APP-EXAMPLE001','outcome':'distinct','basis':'Attempted override'}])
+        for review in ([],[{'id':'wrong','outcome':'distinct','basis':'No match'}],
+                       [{'id':'APP-EXAMPLE001','outcome':'distinct','basis':' '}],
+                       [{'id':'APP-EXAMPLE001','outcome':'duplicate','basis':'Same role'}]):
+            with self.subTest(review=review), self.assertRaises(ValueError):
+                tracker.review_duplicates([{'id':'APP-EXAMPLE001','exact':False}],review)
 
 
 if __name__=='__main__': unittest.main()
