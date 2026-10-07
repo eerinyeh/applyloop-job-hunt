@@ -1,0 +1,12 @@
+private/
+tmp/
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+*.eml
+*.docx
+*.pdf
+*.xlsx
+*.zip
