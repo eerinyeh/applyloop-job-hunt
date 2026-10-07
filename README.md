@@ -1,4 +1,4 @@
-# ApplyLoop — Your Job Hunt, Connected
+# ApplyLoop — For fewer “Which job was this again?” moments.
 
 Turn a pasted job description into tailored CVs, cover letters and application answers grounded in your actual experience. Keep each role's context and application history together in an editable Excel tracker.
 
